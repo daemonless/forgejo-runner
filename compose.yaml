@@ -4,7 +4,7 @@ x-daemonless:
   class: service
   title: "Forgejo Runner"
   icon: ":simple-forgejo:"
-  category: "Development"
+  category: "Infrastructure"
   description: "Runs Forgejo Actions jobs natively on FreeBSD, inside the container, for a Forgejo instance."
   upstream_url: "https://code.forgejo.org/forgejo/runner"
   web_url: "https://forgejo.org/docs/latest/admin/actions/"
