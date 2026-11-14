@@ -1,0 +1,44 @@
+ARG BASE_VERSION=15.1
+FROM ghcr.io/daemonless/base-exec:${BASE_VERSION}
+
+ARG FREEBSD_ARCH=amd64
+ARG PKG_NAME="forgejo-act_runner"
+# Jobs run inside this container (host executor): git for checkouts, node for
+# JavaScript actions, bash because it is the default shell of `run:` steps.
+ARG PACKAGES="${PKG_NAME} git-lite node24 bash"
+
+# --- Metadata (Injected by Generator) ---
+LABEL org.opencontainers.image.title="{{ title }}" \
+      org.opencontainers.image.description="{{ description }}" \
+      org.opencontainers.image.source="{{ repo_url }}" \
+      org.opencontainers.image.url="{{ web_url }}" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="daemonless" \
+      org.opencontainers.image.authors="daemonless" \
+      io.daemonless.category="{{ category }}" \
+{%- if volumes %}
+      io.daemonless.volumes="{{ volumes | map(attribute='path') | join(',') }}" \
+{%- endif %}
+      io.daemonless.arch="${FREEBSD_ARCH}" \
+      io.daemonless.pkg-source="pkg" \
+      io.daemonless.pkg-name="${PKG_NAME}" \
+      io.daemonless.packages="${PACKAGES}"
+
+RUN pkg update && \
+    pkg install -y ${PACKAGES} && \
+    mkdir -p /app && \
+    pkg query '%v' ${PKG_NAME} > /app/version && \
+    ln -s act_runner /usr/local/bin/forgejo-runner && \
+    forgejo-runner --version && \
+    pkg clean -ay && \
+    rm -rf /var/cache/pkg/* /var/db/pkg/repos/*
+
+COPY root/ /
+RUN chmod +x /daemonless/libexec/* /healthz
+
+CMD ["/daemonless/libexec/forgejo-runner"]
+
+# --- Volumes (Injected by Generator) ---
+{%- if volumes %}
+VOLUME {{ volumes | map(attribute='path') | join(' ') }}
+{%- endif %}

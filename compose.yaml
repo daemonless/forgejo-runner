@@ -1,0 +1,78 @@
+name: forgejo-runner
+
+x-daemonless:
+  class: service
+  title: "Forgejo Runner"
+  icon: ":simple-forgejo:"
+  category: "Development"
+  description: "Runs Forgejo Actions jobs natively on FreeBSD, inside the container, for a Forgejo instance."
+  upstream_url: "https://code.forgejo.org/forgejo/runner"
+  web_url: "https://forgejo.org/docs/latest/admin/actions/"
+  freshports_url: "https://www.freshports.org/devel/forgejo-runner/"
+  user: "bsd"
+  mlock: false
+  community: "Discord:https://discord.gg/Kb9tkhecZT"
+
+  docs:
+    env:
+      PUID: "User ID for the runner and the jobs it runs"
+      PGID: "Group ID for the runner and the jobs it runs"
+      TZ: "Timezone for the container"
+      FORGEJO_URL: "URL of the Forgejo instance, as the runner reaches it"
+      FORGEJO_RUNNER_UUID: "UUID Forgejo shows when you create the runner"
+      FORGEJO_RUNNER_TOKEN: "Token Forgejo shows when you create the runner"
+    volumes:
+      /config: "config.yaml (holds the runner token), action cache and job workspaces"
+  notes: |
+    ## Registering the runner
+    In Forgejo, open **Site administration > Actions > Runners** (or the
+    runners page of an organisation, user or repository), create a runner and
+    copy the UUID and token it shows into `FORGEJO_RUNNER_UUID` and
+    `FORGEJO_RUNNER_TOKEN`. On first start the image writes them to
+    `/config/config.yaml`. After that the file is yours: the variables are
+    not read again while it exists (the container logs a line saying so).
+    Edit the file to change labels, run more than one job at a time
+    (`runner.capacity`) or let running jobs finish on shutdown
+    (`runner.shutdown_timeout`; by default `podman stop` cancels them). Run
+    `forgejo-runner generate-config` in the container to see every option.
+    Labels must end in `:host`.
+
+    A `/config/.runner` file left by the old `register` command conflicts
+    with the generated config: remove it.
+
+    Without those variables and without a `/config/config.yaml`, the
+    container stays up, logs what it needs and starts the runner as soon as
+    the file appears.
+
+    ## What jobs can do
+    Jobs run **inside this container** as the `bsd` user (the runner's `host`
+    executor). There is no per-job isolation. A job runs as the same user
+    that owns `/config`, so any workflow can read the runner token in
+    `/config/config.yaml`, change that file, and leave files behind that
+    later jobs and restarts will see. Only connect this runner to
+    repositories whose workflows, and whose contributors' pull requests, you
+    trust. Select it in a workflow with `runs-on: freebsd`.
+
+    The image ships `git`, `node` (for JavaScript actions such as
+    `actions/checkout`) and `bash`. Anything else a job needs has to be added
+    in an image built from this one. Workflows written for Linux containers
+    (`container:`, `services:`, Docker actions) do not run on this executor.
+
+services:
+  forgejo-runner:
+    image: ghcr.io/daemonless/forgejo-runner:latest
+    container_name: forgejo-runner
+    # "always", not "unless-stopped": FreeBSD's podman rc.d only auto-starts
+    # containers with restart-policy=always at boot (needs podman_enable=YES).
+    restart: always
+
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - FORGEJO_URL=https://forgejo.example.com/
+      - FORGEJO_RUNNER_UUID=
+      - FORGEJO_RUNNER_TOKEN=
+
+    volumes:
+      - /path/to/containers/forgejo-runner:/config

@@ -1,0 +1,45 @@
+#!/bin/sh
+# Start Forgejo Runner; /init has already dropped to the run user.
+
+# The runner keeps its action and job caches under $HOME/.cache.
+export HOME=/config
+cd /config || exit 1
+
+CONFIG=/config/config.yaml
+
+if [ -f "${CONFIG}" ]; then
+    if [ -n "${FORGEJO_URL:-}${FORGEJO_RUNNER_UUID:-}${FORGEJO_RUNNER_TOKEN:-}" ]; then
+        echo "[forgejo-runner] Using the existing ${CONFIG}; the FORGEJO_* variables are ignored. Delete the file to have it written again."
+    fi
+elif [ -n "${FORGEJO_URL:-}" ] && [ -n "${FORGEJO_RUNNER_UUID:-}" ] && [ -n "${FORGEJO_RUNNER_TOKEN:-}" ]; then
+    echo "[forgejo-runner] Writing ${CONFIG} for ${FORGEJO_URL}"
+    (umask 077 && cat > "${CONFIG}.tmp" <<YAML
+# Written on first start from FORGEJO_URL, FORGEJO_RUNNER_UUID and
+# FORGEJO_RUNNER_TOKEN. Yours to edit from here on: those variables are not
+# read again while this file exists. All options: forgejo-runner generate-config
+runner:
+  labels: ["freebsd:host"]
+server:
+  connections:
+    forgejo:
+      url: ${FORGEJO_URL}
+      uuid: ${FORGEJO_RUNNER_UUID}
+      token: ${FORGEJO_RUNNER_TOKEN}
+YAML
+    ) && mv "${CONFIG}.tmp" "${CONFIG}" || exit 1
+else
+    MISSING=""
+    [ -n "${FORGEJO_URL:-}" ] || MISSING="${MISSING} FORGEJO_URL"
+    [ -n "${FORGEJO_RUNNER_UUID:-}" ] || MISSING="${MISSING} FORGEJO_RUNNER_UUID"
+    [ -n "${FORGEJO_RUNNER_TOKEN:-}" ] || MISSING="${MISSING} FORGEJO_RUNNER_TOKEN"
+    echo "[forgejo-runner] Not configured. Not set:${MISSING}"
+    echo "[forgejo-runner] Create a runner in Forgejo (Site administration > Actions > Runners), set the three"
+    echo "[forgejo-runner] variables and recreate the container, or put your own ${CONFIG} in place."
+    echo "[forgejo-runner] Waiting for ${CONFIG} ..."
+    while [ ! -f "${CONFIG}" ]; do
+        sleep 5
+    done
+fi
+
+echo "[forgejo-runner] Starting runner daemon"
+exec /usr/local/bin/act_runner -c "${CONFIG}" daemon
