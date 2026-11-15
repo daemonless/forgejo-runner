@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-14T23:30:46Z",
+  "generated": "2026-11-15T12:29:53Z",
   "image": "forgejo-runner",
   "tags": {
     "pkg-aarch64": {
       "app_version": "13.2.0",
       "arch": "aarch64",
-      "generated": "2026-11-14T23:28:52Z",
+      "generated": "2026-11-15T12:27:56Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -901,7 +901,7 @@
     "pkg-latest-aarch64": {
       "app_version": "13.2.0",
       "arch": "aarch64",
-      "generated": "2026-11-14T23:28:57Z",
+      "generated": "2026-11-15T12:27:59Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
