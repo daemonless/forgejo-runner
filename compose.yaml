@@ -18,9 +18,16 @@ x-daemonless:
       PUID: "User ID for the runner and the jobs it runs"
       PGID: "Group ID for the runner and the jobs it runs"
       TZ: "Timezone for the container"
-      FORGEJO_URL: "URL of the Forgejo instance, as the runner reaches it"
-      FORGEJO_RUNNER_UUID: "UUID Forgejo shows when you create the runner"
-      FORGEJO_RUNNER_TOKEN: "Token Forgejo shows when you create the runner"
+      FORGEJO_URL:
+        desc: "URL of the Forgejo instance, as the runner reaches it (e.g. https://git.example.com)"
+        level: primary
+      FORGEJO_RUNNER_UUID:
+        desc: "UUID Forgejo shows when you create the runner"
+        level: primary
+      FORGEJO_RUNNER_TOKEN:
+        desc: "Token Forgejo shows when you create the runner"
+        generate: false
+        level: primary
     volumes:
       /config: "config.yaml (holds the runner token), action cache and job workspaces"
   notes: |
@@ -70,7 +77,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
-      - FORGEJO_URL=https://forgejo.example.com/
+      - FORGEJO_URL=
       - FORGEJO_RUNNER_UUID=
       - FORGEJO_RUNNER_TOKEN=
 
